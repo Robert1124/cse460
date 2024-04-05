@@ -46,8 +46,8 @@ feedback_t PDterms;
 
 // List of the variables that need persistent storage
 float g = 9.81;
-//float mass = 0.012;
-float mass = 0.0811;
+float mass = 0.012;
+//float mass = 0.0811;
 float frame_len = 0.12;
 
 
@@ -155,40 +155,25 @@ void loop() {
   // This is the solution that I use for the height feedback, you still need to convert this value into motor/servo values
   // This is an absolute height controller, which is in meters; for example if your controls
   if (PDterms.zEn) {
-    if(fz != 0){
-      // Integral in Z
-      z_integral += (fz - altitude) * ((float)dt)/1000000.0f * PDterms.kiz;
-      z_integral = constrain(z_integral, PDterms.z_int_low, PDterms.z_int_high);
-      // PID in z: the output is the force to maintain the altitude
-      fz = (fz - altitude) * PDterms.kpz - altitudeVelocity * PDterms.kdz + z_integral;
-      fz += mass * g;
-      /*
-      if(fz < 0){
-        fz = 0;
-      }
-      */
-      //Serial.print("Height control: ");
-      //Serial.println(fz); 
-      //control_z = fz + mass * g;
-    }
+    z_integral += (fz - altitude) * ((float)dt)/1000000.0f * PDterms.kiz;
+    z_integral = constrain(z_integral, PDterms.z_int_low, PDterms.z_int_high);
+    // PID in z: the output is the force to maintain the altitude
+    fz = (fz - altitude) * PDterms.kpz - altitudeVelocity * PDterms.kdz + z_integral;
+    fz += mass * g;
   }
 
   if(PDterms.yawEn) {
     tz = radians(tz);
-    
-    if(tz != yaw){
-      //calculate angle diff
-      //desire > current->positive
-      //desire < current->negative
-      angle_diff = atan2(sin(tz - yaw), cos(tz - yaw));
-      //Integral in yas
-      //yaw_integral += (angle_diff) * ((float)dt)/1000000.0f * PDterms.kiyaw;
-      //yaw_integral = constrain(yaw_integral, PDterms.yaw_int_low, PDterms.yaw_int_high);
-      tz = angle_diff * PDterms.kpyaw - yawrate * PDterms.kdyaw;
-      //Serial.print("YAW control: ");
-      //Serial.println(tz);
-    
-    }
+    //calculate angle diff
+    //desire > current->positive
+    //desire < current->negative
+    angle_diff = atan2(sin(tz - yaw), cos(tz - yaw));
+    //Integral in yas
+    //yaw_integral += (angle_diff) * ((float)dt)/1000000.0f * PDterms.kiyaw;
+    //yaw_integral = constrain(yaw_integral, PDterms.yaw_int_low, PDterms.yaw_int_high);
+    tz = angle_diff * PDterms.kpyaw - yawrate * PDterms.kdyaw;
+    //Serial.print("YAW control: ");
+    //Serial.println(tz);
   }
   
   //fx = 0.0;
@@ -196,43 +181,30 @@ void loop() {
   Serial.println(tz); 
   
 
-  //Yaw Control
-  //fabs(angle_diff) > PI / 4 || 
-  //yawrate > yaw_rate_threshold || yawrate < -yaw_rate_threshold
-  //tz = fabs(tz);
-  if(fz > 0){
-    float i = fz/2 + tx/(2* frame_len);
-    float j = fx/2 - tz/(2* frame_len);
-    float m = fx/2  + tz/(2 * frame_len);
-    float t = fz/2 - tx/(2 * frame_len);
-    if (abs(j) > 0.0001 && abs(m) > 0.0001) {  // 避免除以接近零的数
-      t1 = atan(t / m) * (180 / PI);
-      t2 = atan(i / j) * (180 / PI);
-      if(t1 < 0){
-        t1 = 180 + t1;
-      }
-      if(t2 < 0){
-        t2 = 180 + t2;
-      }
-      t2 = 180 - t2;
-
-
-      
-
-    } else {
-        t1 = 90;
-        t2 = 90;
-    }
-    m1 = sqrt(t * t + m * m);
-    m2 = sqrt(i * i + j * j);
-
-    Serial.print("t1: ");
-    Serial.println(t1);
-    Serial.print("t2: ");
-    Serial.println(t2);
-   
-
+  //if(fz > 0){
+  float i = fz/2 + tx/(2* frame_len);
+  float j = fx/2 - tz/(2* frame_len);
+  float m = fx/2  + tz/(2 * frame_len);
+  float t = fz/2 - tx/(2 * frame_len);
+  t1 = atan2(t , m) * (180 / PI);
+  t2 = atan2(i , j) * (180 / PI);
+  if(t1 < 0){
+    t1 = 180 + t1;
   }
+  if(t2 < 0){
+    t2 = 180 + t2;
+  }
+  t2 = 180 - t2;
+  m1 = sqrt(t * t + m * m);
+  m2 = sqrt(i * i + j * j);
+
+  Serial.print("t1: ");
+  Serial.println(t1);
+  Serial.print("t2: ");
+  Serial.println(t2);
+
+
+  //}
   
   // Put your controller code here which converts ground station controls and sensor feedback into motor/servo values
   // feel free to use the PDterms set from the ground station which are picked up in the paramUpdate function for easy tuning

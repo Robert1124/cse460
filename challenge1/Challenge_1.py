@@ -1,3 +1,4 @@
+import math
 from comm.Serial import SerialController, DataType_Int, DataType_Float, DataType_Boolean
 from joystick.JoystickManager import JoystickManager
 from gui.simpleGUI import SimpleGUI
@@ -22,17 +23,17 @@ if __name__ == "__main__":
     serial.manage_peer("G", ROBOT_MAC)
     time.sleep(.05)
     # // PID terms
-    serial.send_preference(ROBOT_MAC, DataType_Float, "kpyaw", 0.01) #2
-    serial.send_preference(ROBOT_MAC, DataType_Float, "kdyaw", .001)#.1
+    serial.send_preference(ROBOT_MAC, DataType_Float, "kpyaw", 0.08) #0.05
+    serial.send_preference(ROBOT_MAC, DataType_Float, "kdyaw", -0.03)#.001
     serial.send_preference(ROBOT_MAC, DataType_Float, "kiyaw", 0)
 
-    serial.send_preference(ROBOT_MAC, DataType_Float, "kpz", 0.01) #1
-    serial.send_preference(ROBOT_MAC, DataType_Float, "kdz", .006) #0.6
-    serial.send_preference(ROBOT_MAC, DataType_Float, "kiz", .001) #0.1
+    serial.send_preference(ROBOT_MAC, DataType_Float, "kpz", 0.5) #0.01
+    serial.send_preference(ROBOT_MAC, DataType_Float, "kdz", 0.9) #0.006
+    serial.send_preference(ROBOT_MAC, DataType_Float, "kiz", 0) #0.001
 
     # // Range terms for the integral
-    serial.send_preference(ROBOT_MAC, DataType_Float, "z_int_low", 0.05)
-    serial.send_preference(ROBOT_MAC, DataType_Float, "z_int_high", 0.15)
+    serial.send_preference(ROBOT_MAC, DataType_Float, "z_int_low", 0)#0.05
+    serial.send_preference(ROBOT_MAC, DataType_Float, "z_int_high", 0) #0.15
 
 
 
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     desired_height = 0.0
     yaw_rate_threshold = 1.0
     hight_threshold = 10
+    direction_input = 0
     try:
         while True:
             # Axis input: [left_vert, left_horz, right_vert, right_horz, left_trigger, right_trigger]
@@ -86,10 +88,11 @@ if __name__ == "__main__":
                     desired_height = 0
             
             #### CONTROL INPUTS to the robot here #########
-            fx = ((axis[5]+1) / 2 - (axis[2]+1) / 2) * 0.5  # Forward with the triggers
+            fx = ((axis[5]+1) / 2 - (axis[2]+1) / 2) * 0.9 # Forward with the triggers
             fz = desired_height  # Vertical left joystick
             tx = 0  # No roll control
-            tz = -axis[4]  # Horizontal right joystick
+            
+            tz = -axis[4] * math.pi # Horizontal right joystick
             led = -buttons[2]  # Button X
 
             print("fx={:.2f} fz={:.2f} tz={:.2f} LED={:.2f} ".format(fx, fz, tz, led), end=' ')
@@ -109,7 +112,8 @@ if __name__ == "__main__":
                 )
             else:
                 print("No sensors")
-
+            
+            tz = mygui.des_yaw
 
 
             # Send through serial port
